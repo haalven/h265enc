@@ -46,6 +46,8 @@ if 'streams' in vinfo:
 
         print( 'Stream' + index , ':' , stype , codec , bitrt , 'kbit/s' )
 
+else: exit('invalid video file')
+
 
 # video quality
 
