@@ -1,0 +1,75 @@
+#!python3
+
+# transcode video file to h265
+# on Mac hardware (hevc_videotoolbox)
+# using ffprobe, ffmpeg
+
+
+from sys import argv, exit
+from os import system, environ
+from json import load
+
+
+# cli argument
+
+myname = argv.pop(0).split('/')[-1]
+
+syntax = f'syntax: {myname} <videofile>'
+
+if not argv: exit(syntax)
+
+
+# filenames
+
+videofile  = '\x20'.join(argv)
+
+targetfile = videofile + '.h265.mp4'
+
+probefile  = environ['HOME'] + '/.ffprobe.json'
+
+
+# run ffprobe
+system( f'ffprobe -v quiet -print_format json -show_format -show_streams \
+          "{videofile}" > "{probefile}"' )
+
+with open(probefile) as f: vinfo = load(f)
+
+# print video info
+if 'streams' in vinfo:
+
+    for stream in vinfo['streams']:
+
+        index = str(stream['index']) if 'index' in stream else '?'
+        stype = str(stream['codec_type']) if 'codec_type' in stream else '?'
+        codec = str(stream['codec_name']) if 'codec_name' in stream else '?'
+        bitrt = str(int(int(stream['bit_rate'])/1000)) if 'bit_rate' in stream else '?'
+
+        print( 'Stream' + index , ':' , stype , codec , bitrt , 'kbit/s' )
+
+
+# video quality
+
+while 1:
+    quality = input('h265 quality (0=worst ... 100=best): ')
+    try:
+        q = int(quality)
+        if (q>=0) and (q<=100): break
+    except Exception: continue
+
+
+# audio codec
+
+while 1:
+    acodec = input('audio codec ("aac" or "copy"): ').strip('"')
+    if acodec: break
+
+
+# the enc command
+
+enc_cmd = ['ffmpeg']
+enc_cmd.append( f'-i "{videofile}"' )
+enc_cmd.append( f'-c:v hevc_videotoolbox -q:v {q} -tag:v hvc1' )
+enc_cmd.append( f'-c:a {acodec}' )
+enc_cmd.append( f'"{targetfile}"' )
+
+system( '\x20'.join(enc_cmd) )
